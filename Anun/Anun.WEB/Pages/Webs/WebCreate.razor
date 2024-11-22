@@ -1,0 +1,35 @@
+﻿@page "/webs/create"
+@using Anun.SHARED.Entities
+@using Anun.WEB.Repositories
+
+
+@inject IRepository repository
+@inject NavigationManager navigationManager
+@inject SweetAlertService sweetAlertService
+
+<h3>Crear Web</h3>
+
+<WebForm @ref="webForm" Web="web" OnSubmit="Create" ReturnAction="Return" />
+
+@code {
+    private Web web = new();
+    private WebForm webForm;
+
+    private async Task Create()
+    {
+        var responseHttp = await repository.PostAsync("/api/webs", web);
+        if (responseHttp.Error)
+        {
+            var message = await responseHttp.GetErrorMessageAsync();
+            await sweetAlertService.FireAsync("Error", message);
+            return;
+        }
+
+        navigationManager.NavigateTo("/Webs");
+    }
+
+    private void Return()
+    {
+        navigationManager.NavigateTo("/Webs");
+    }
+}

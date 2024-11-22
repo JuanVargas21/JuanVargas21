@@ -1,0 +1,111 @@
+﻿@page "/empleados"
+@using Anun.WEB.Repositories
+@using Anun.SHARED.Entities
+@using Anun.WEB.Shared
+@using Anun.WEB
+@inject IRepository repository
+@inject NavigationManager navigationManager
+@inject SweetAlertService swal
+
+<h1>EmpleadosIndex</h1>
+
+@if (Empleados is null)
+{
+    <div class="spinner" />
+}
+else
+{
+    <GenericList MyList="Empleados">
+        <Body>
+            <div class="card">
+                <div class="card-header">
+                    <span>
+                        <i class="oi oi-person"></i> Empleados
+                        <a class="btn btn-sm btn-primary float-end" href="/Empleados/create"><i class="oi oi-plus"></i> Crear Empleado</a>
+                    </span>
+                </div>
+                <div class="card-body">
+                    <div class="mb-2" style="display: flex; flex-wrap: wrap; align-items: center;">
+                    </div>
+                </div>
+            </div>
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Nombre</th>
+                        <th>Cargo</th>
+                        <th>Teléfono</th>
+                        <th>Email</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var empleado in Empleados!)
+                    {
+                        <tr>
+                            <td>@empleado.Nombrecompleto</td>
+                            <td>@empleado.cargo</td>
+                            <td>@empleado.telefono</td>
+                            <td>@empleado.email</td>
+                            <td>
+                                <a href="/Empleados/edit/@empleado.Id" class="btn btn-warning btn-sm"><i class="oi oi-pencil" /> Editar</a>
+                                <button class="btn btn-danger btn-sm" @onclick=@(() => DeleteAsync(empleado))><i class="oi oi-trash" /> Borrar</button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </Body>
+    </GenericList>
+}
+
+@code {
+    public List<Empleado> Empleados { get; set; }
+
+    protected async override Task OnInitializedAsync()
+    {
+        await Load();
+    }
+
+    private async Task Load()
+    {
+        var responseHppt = await repository.GetAsync<List<Empleado>>("/api/empleados");
+        Empleados = responseHppt.Response!;
+    }
+
+    private async Task DeleteAsync(Empleado empleado)
+    {
+        var result = await swal.FireAsync(new SweetAlertOptions
+        {
+            Title = "Confirmación",
+            Text = "¿Está seguro de que quiere borrar el empleado?",
+            Icon = SweetAlertIcon.Question,
+            ShowCancelButton = true
+        });
+
+        var confirm = string.IsNullOrEmpty(result.Value);
+
+        if (confirm)
+        {
+            return;
+        }
+
+        var responseHTTP = await repository.DeleteAsync<Empleado>($"api/empleados/{empleado.Id}");
+
+        if (responseHTTP.Error)
+        {
+            if (responseHTTP.HttpResponseMessage.StatusCode == System.Net.HttpStatusCode.NotFound)
+            {
+                navigationManager.NavigateTo("/");
+            }
+            else
+            {
+                var mensajeError = await responseHTTP.GetErrorMessageAsync();
+                await swal.FireAsync("Error", mensajeError, SweetAlertIcon.Error);
+            }
+        }
+        else
+        {
+            await Load();
+        }
+    }
+}

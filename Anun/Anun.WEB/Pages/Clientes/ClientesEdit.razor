@@ -1,0 +1,66 @@
+﻿@page "/cliente/edit/{id:int}"
+@using Anun.WEB.Repositories
+@inject NavigationManager navigationManager
+@inject IRepository repository
+@inject SweetAlertService swal
+
+<h3>Edit Cliente</h3>
+
+@if (Cliente == null)
+{
+    <p>Cargando...</p>
+}
+else
+{
+    <ClientesForm @ref="ClienteForm" Cliente="Cliente" OnSubmit="Edit" ReturnAction="Return" />
+}
+
+@code {
+    private Cliente Cliente;
+    private ClientesForm ClienteForm;
+    [Parameter]
+    public int Id { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        var responseHTTP = await repository.GetAsync<Cliente>($"api/clientes/{Id}");
+
+        if (responseHTTP.Error)
+        {
+            if (responseHTTP.HttpResponseMessage.StatusCode == System.Net.HttpStatusCode.NotFound)
+            {
+                navigationManager.NavigateTo("clientes");
+            }
+            else
+            {
+                var messageError = await responseHTTP.GetErrorMessageAsync();
+                await swal.FireAsync("Error", messageError, SweetAlertIcon.Error);
+            }
+        }
+        else
+        {
+            Cliente = responseHTTP.Response;
+        }
+    }
+
+    private async Task Edit()
+    {
+        var responseHTTP = await repository.PutAsync("api/clientes", Cliente);
+
+        if (responseHTTP.Error)
+        {
+            var mensajeError = await responseHTTP.GetErrorMessageAsync();
+            await swal.FireAsync("Error", mensajeError, SweetAlertIcon.Error);
+        }
+        else
+        {
+            ClienteForm!.FormPostedSuccessfully = true;
+            navigationManager.NavigateTo("clientes");
+        }
+    }
+
+    private void Return()
+    {
+        navigationManager.NavigateTo("clientes");
+    }
+}

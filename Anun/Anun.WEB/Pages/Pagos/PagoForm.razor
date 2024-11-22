@@ -1,0 +1,67 @@
+﻿@using Anun.SHARED.Entities
+
+@inject SweetAlertService swal
+
+<NavigationLock OnBeforeInternalNavigation="OnBeforeInternalNavigation"></NavigationLock>
+<EditForm EditContext="editContext" OnSubmit="OnSubmit">
+    <DataAnnotationsValidator />
+
+    <div class="mb-3">
+        <label>Fecha:</label>
+        <InputDate @bind-Value="Pago.Fecha" class="form-control" />
+        <ValidationMessage For="@(() => Pago.Fecha)" />
+    </div>
+
+    <div class="mb-3">
+        <label>Monto:</label>
+        <InputNumber @bind-Value="Pago.monto" class="form-control" />
+        <ValidationMessage For="@(() => Pago.monto)" />
+    </div>
+
+    <button class="btn btn-primary" type="submit">Guardar</button>
+    <button class="btn btn-success" @onclick="ReturnAction">Regresar</button>
+</EditForm>
+
+@code {
+    private EditContext editContext;
+
+    protected override void OnInitialized()
+    {
+        editContext = new EditContext(Pago);
+    }
+
+    [EditorRequired]
+    [Parameter]
+    public Pago Pago { get; set; }
+
+    [EditorRequired]
+    [Parameter]
+    public EventCallback OnSubmit { get; set; }
+
+    [EditorRequired]
+    [Parameter]
+    public EventCallback ReturnAction { get; set; }
+
+    public bool FormPostedSuccessfully { get; set; } = false;
+
+    private async Task OnBeforeInternalNavigation(LocationChangingContext context)
+    {
+        var formWasEdited = editContext.IsModified();
+        if (!formWasEdited) return;
+
+        if (FormPostedSuccessfully) return;
+
+        var result = await swal.FireAsync(new SweetAlertOptions
+            {
+                Title = "Confirmación",
+                Text = "¿Deseas abandonar la página y perder los cambios?",
+                Icon = SweetAlertIcon.Warning,
+                ShowCancelButton = true
+            });
+
+        var confirm = !string.IsNullOrEmpty(result.Value);
+        if (confirm) return;
+
+        context.PreventNavigation();
+    }
+}

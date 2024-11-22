@@ -1,0 +1,36 @@
+﻿@page "/clientes/create"
+@using Anun.SHARED.Entities
+@using Anun.WEB.Repositories
+
+
+
+@inject IRepository repository
+@inject NavigationManager navigationManager
+@inject SweetAlertService sweetAlertService
+
+<h3>Cliente Create</h3>
+
+<ClientesForm @ref="clienteForm" Cliente="cliente" OnSubmit="Create" ReturnAction="Return" />
+
+@code {
+    private Cliente cliente = new();
+    private ClientesForm clienteForm;
+
+    private async Task Create()
+    {
+        var responseHttp = await repository.PostAsync("/api/clientes", cliente);
+        if (responseHttp.Error)
+        {
+            var message = await responseHttp.GetErrorMessageAsync();
+            await sweetAlertService.FireAsync("Error", message);
+            return;
+        }
+
+        navigationManager.NavigateTo("/Clientes");
+    }
+
+    private void Return()
+    {
+        navigationManager.NavigateTo("/Clientes");
+    }
+}

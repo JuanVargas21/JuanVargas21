@@ -1,0 +1,35 @@
+﻿@page "/anuncios/create"
+@using Anun.SHARED.Entities
+@using Anun.WEB.Repositories
+
+
+@inject IRepository repository
+@inject NavigationManager navigationManager
+@inject SweetAlertService sweetAlertService
+
+<h3>Crear Anuncio</h3>
+
+<AnuncioForm @ref="anuncioForm" Anuncio="anuncio" OnSubmit="Create" ReturnAction="Return" />
+
+@code {
+    private Anuncio anuncio = new();
+    private AnuncioForm anuncioForm;
+
+    private async Task Create()
+    {
+        var responseHttp = await repository.PostAsync("/api/anuncios", anuncio);
+        if (responseHttp.Error)
+        {
+            var message = await responseHttp.GetErrorMessageAsync();
+            await sweetAlertService.FireAsync("Error", message);
+            return;
+        }
+
+        navigationManager.NavigateTo("/Anuncios");
+    }
+
+    private void Return()
+    {
+        navigationManager.NavigateTo("/Anuncios");
+    }
+}

@@ -1,0 +1,66 @@
+﻿@page "/anuncios/edit/{Id:int}"
+@inject NavigationManager navigationManager
+@inject IRepository repository
+@inject SweetAlertService swal
+@using Anun.WEB.Repositories
+
+<h3>AnuncioEdit</h3>
+
+@if (Anuncio is null)
+{
+    <p>Cargando ...</p>
+}
+else
+{
+    <AnuncioForm @ref="AnuncioForm" Anuncio="Anuncio" OnSubmit="Edit" ReturnAction="Return" />
+}
+
+@code {
+    private Anuncio Anuncio;
+    private AnuncioForm AnuncioForm;
+    [Parameter]
+    public int Id { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        var responseHTTP = await repository.GetAsync<Anuncio>($"api/anuncios/{Id}");
+
+        if (responseHTTP.Error)
+        {
+            if (responseHTTP.HttpResponseMessage.StatusCode == System.Net.HttpStatusCode.NotFound)
+            {
+                navigationManager.NavigateTo("anuncios");
+            }
+            else
+            {
+                var messageError = await responseHTTP.GetErrorMessageAsync();
+                await swal.FireAsync("Error", messageError, SweetAlertIcon.Error);
+            }
+        }
+        else
+        {
+            Anuncio = responseHTTP.Response;
+        }
+    }
+
+    private async Task Edit()
+    {
+        var responseHTTP = await repository.PutAsync("api/anuncios", Anuncio);
+
+        if (responseHTTP.Error)
+        {
+            var mensajeError = await responseHTTP.GetErrorMessageAsync();
+            await swal.FireAsync("Error", mensajeError, SweetAlertIcon.Error);
+        }
+        else
+        {
+            AnuncioForm!.FormPostedSuccessfully = true;
+            navigationManager.NavigateTo("anuncios");
+        }
+    }
+
+    private void Return()
+    {
+        navigationManager.NavigateTo("anuncios");
+    }
+}

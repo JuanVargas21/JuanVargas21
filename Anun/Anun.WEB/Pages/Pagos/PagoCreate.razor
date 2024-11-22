@@ -1,0 +1,36 @@
+﻿@page "/pagos/create"
+@using Anun.SHARED.Entities
+@using Anun.WEB.Repositories
+
+
+
+@inject IRepository repository
+@inject NavigationManager navigationManager
+@inject SweetAlertService sweetAlertService
+
+<h3>Crear Pago</h3>
+
+<PagoForm @ref="pagoForm" Pago="pago" OnSubmit="Create" ReturnAction="Return" />
+
+@code {
+    private Pago pago = new();
+    private PagoForm pagoForm;
+
+    private async Task Create()
+    {
+        var responseHttp = await repository.PostAsync("/api/pagos", pago);
+        if (responseHttp.Error)
+        {
+            var message = await responseHttp.GetErrorMessageAsync();
+            await sweetAlertService.FireAsync("Error", message);
+            return;
+        }
+
+        navigationManager.NavigateTo("/Pagos");
+    }
+
+    private void Return()
+    {
+        navigationManager.NavigateTo("/Pagos");
+    }
+}

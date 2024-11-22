@@ -1,0 +1,111 @@
+﻿@page "/webs"
+@using Anun.WEB.Repositories;
+@using Anun.SHARED.Entities;
+@using Anun.WEB.Shared;
+
+
+@inject IRepository repository
+@inject NavigationManager navigationManager
+@inject SweetAlertService swal
+
+<h1>WebsIndex</h1>
+
+@if (Webs is null)
+{
+    <div class="spinner" />
+}
+else
+{
+    <GenericList MyList="Webs">
+        <Body>
+            <div class="card">
+                <div class="card-header">
+                    <span>
+                        <i class="oi oi-globe"></i> Webs
+                        <a class="btn btn-sm btn-primary float-end" href="/Webs/create"><i class="oi oi-plus"></i> Crear Web</a>
+                    </span>
+                </div>
+                <div class="card-body">
+                    <div class="mb-2" style="display: flex; flex-wrap: wrap; align-items: center;">
+                    </div>
+                </div>
+            </div>
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Url</th>
+                        <th>Nombre</th>
+                        <th>Tema</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var web in Webs!)
+                    {
+                        <tr>
+                            <td>@web.Url</td>
+                            <td>@web.Nombre</td>
+                            <td>@web.Tema</td>
+                            <td>
+                                <a href="/Webs/edit/@web.Id" class="btn btn-warning btn-sm"><i class="oi oi-pencil" /> Editar</a>
+                                <button class="btn btn-danger btn-sm" @onclick=@(() => DeleteAsync(web))><i class="oi oi-trash" /> Borrar</button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </Body>
+    </GenericList>
+}
+
+@code {
+    public List<Web> Webs { get; set; }
+
+    protected async override Task OnInitializedAsync()
+    {
+        await Load();
+    }
+
+    private async Task Load()
+    {
+        var responseHppt = await repository.GetAsync<List<Web>>("/api/webs");
+        Webs = responseHppt.Response!;
+    }
+
+    private async Task DeleteAsync(Web web)
+    {
+        var result = await swal.FireAsync(new SweetAlertOptions
+        {
+            Title = "Confirmación",
+            Text = "¿Está seguro de que quiere borrar el registro?",
+            Icon = SweetAlertIcon.Question,
+            ShowCancelButton = true
+        });
+
+        var confirm = string.IsNullOrEmpty(result.Value);
+
+        if (confirm)
+        {
+            return;
+        }
+
+        var responseHTTP = await repository.DeleteAsync<Web>($"api/webs/{web.Id}");
+
+        if (responseHTTP.Error)
+        {
+            if (responseHTTP.HttpResponseMessage.StatusCode == System.Net.HttpStatusCode.NotFound)
+            {
+                navigationManager.NavigateTo("/");
+            }
+            else
+            {
+                var mensajeError = await responseHTTP.GetErrorMessageAsync();
+                await swal.FireAsync("Error", mensajeError, SweetAlertIcon.Error);
+            }
+        }
+        else
+        {
+            await Load();
+        }
+    }
+}
+

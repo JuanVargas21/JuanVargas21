@@ -1,0 +1,120 @@
+﻿@page "/Anuncios"
+
+
+
+@using Anun.WEB.Repositories
+@using Anun.WEB.Shared
+
+
+@inject IRepository repository
+@inject NavigationManager navigationManager
+@inject SweetAlertService swal
+
+<h1>AnunciosIndex</h1>
+
+@if (Anuncios is null)
+{
+    <div class="spinner" />
+}
+else
+{
+    <GenericList MyList="Anuncios">
+        <Body>
+            <div class="card">
+                <div class="card-header">
+                    <span>
+                        <i class="oi oi-media-play"></i> Anuncios
+                        <a class="btn btn-sm btn-primary float-end" href="/Anuncios/create"><i class="oi oi-plus"></i> Crear Anuncio</a>
+                    </span>
+                </div>
+                <div class="card-body">
+                    <div class="mb-2" style="display: flex; flex-wrap: wrap; align-items: center;">
+                    </div>
+                </div>
+            </div>
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Nombre</th>
+                        <th>Tipo</th>
+                        <th>Contenido</th>
+                        <th>Titular</th>
+                        <th>Categoría</th>
+                        <th>Precio</th>
+                        
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var anuncio in Anuncios!)
+                    {
+                        <tr>
+                            <td>@anuncio.Nombre</td>
+                            <td>@anuncio.Tipo</td>
+                            <td>@anuncio.contenido</td>
+                            <td>@anuncio.Titular</td>
+                            <td>@anuncio.Categoria</td>
+                            <td>@anuncio.precio</td>
+                            <td>
+                                <a href="/anuncios/edit/@anuncio.Id" class="btn btn-warning btn-sm"><i class="oi oi-pencil" /> Editar</a>
+                                <button class="btn btn-danger btn-sm" @onclick=@(() => DeleteAsync(anuncio))><i class="oi oi-trash" /> Borrar</button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </Body>
+    </GenericList>
+}
+
+@code {
+    public List<Anuncio> Anuncios { get; set; }
+
+    protected async override Task OnInitializedAsync()
+    {
+        await Load();
+    }
+
+    private async Task Load()
+    {
+        var responseHppt = await repository.GetAsync<List<Anuncio>>("/api/anuncios");
+        Anuncios = responseHppt.Response!;
+    }
+
+    private async Task DeleteAsync(Anuncio Anuncio)
+    {
+        var result = await swal.FireAsync(new SweetAlertOptions
+        {
+            Title = "Confirmación",
+            Text = "¿Está seguro de que quiere borrar el anuncio?",
+            Icon = SweetAlertIcon.Question,
+            ShowCancelButton = true
+        });
+
+        var confirm = string.IsNullOrEmpty(result.Value);
+
+        if (confirm)
+        {
+            return;
+        }
+
+        var responseHTTP = await repository.DeleteAsync<Anuncio>($"api/anuncios/{Anuncio.Id}");
+
+        if (responseHTTP.Error)
+        {
+            if (responseHTTP.HttpResponseMessage.StatusCode == System.Net.HttpStatusCode.NotFound)
+            {
+                navigationManager.NavigateTo("/");
+            }
+            else
+            {
+                var mensajeError = await responseHTTP.GetErrorMessageAsync();
+                await swal.FireAsync("Error", mensajeError, SweetAlertIcon.Error);
+            }
+        }
+        else
+        {
+            await Load();
+        }
+    }
+}
+

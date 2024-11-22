@@ -1,0 +1,6 @@
+@Anun.API_HostAddress = http://localhost:5287
+
+GET {{Anun.API_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

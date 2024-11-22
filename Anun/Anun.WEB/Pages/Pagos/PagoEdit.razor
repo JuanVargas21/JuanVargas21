@@ -1,0 +1,66 @@
+﻿@page "/pago/edit/{id:int}"
+@using Anun.WEB.Repositories
+@inject NavigationManager navigationManager
+@inject IRepository repository
+@inject SweetAlertService swal
+
+<h3>Edit Pago</h3>
+
+@if (Pago == null)
+{
+    <p>Cargando...</p>
+}
+else
+{
+    <PagoForm @ref="PagoForm" Pago="Pago" OnSubmit="Edit" ReturnAction="Return" />
+}
+
+@code {
+    private Pago Pago;
+    private PagoForm PagoForm;
+    [Parameter]
+    public int Id { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        var responseHTTP = await repository.GetAsync<Pago>($"api/pagos/{Id}");
+
+        if (responseHTTP.Error)
+        {
+            if (responseHTTP.HttpResponseMessage.StatusCode == System.Net.HttpStatusCode.NotFound)
+            {
+                navigationManager.NavigateTo("pagos");
+            }
+            else
+            {
+                var messageError = await responseHTTP.GetErrorMessageAsync();
+                await swal.FireAsync("Error", messageError, SweetAlertIcon.Error);
+            }
+        }
+        else
+        {
+            Pago = responseHTTP.Response;
+        }
+    }
+
+    private async Task Edit()
+    {
+        var responseHTTP = await repository.PutAsync("api/pagos", Pago);
+
+        if (responseHTTP.Error)
+        {
+            var mensajeError = await responseHTTP.GetErrorMessageAsync();
+            await swal.FireAsync("Error", mensajeError, SweetAlertIcon.Error);
+        }
+        else
+        {
+            PagoForm!.FormPostedSuccessfully = true;
+            navigationManager.NavigateTo("pagos");
+        }
+    }
+
+    private void Return()
+    {
+        navigationManager.NavigateTo("pagos");
+    }
+}
